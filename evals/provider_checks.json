@@ -1,0 +1,92 @@
+{
+  "notice": "FROZEN 2026-10-04, before any OpenAI or Bedrock call. Provider-check batch for newly added providers: a normal answer, a clarification, no matching events, and a legitimate zero. Three entries are exact copies of DEV cases from cases.json (seen during development; known regression cases, NOT unseen held-out cases). The fourth is new and is not part of the dev/held-out scores. Expected values come from plain-Python ground truth over SYNTHETIC data (as of 2026-10-01). Do not edit after a provider has been run against this file.",
+  "frozen_on": "2026-10-04",
+  "checks": [
+    {
+      "id": "nets_tickets_sep_2026_by_event_date",
+      "split": "dev",
+      "kind": "answerable",
+      "question": "How many tickets were sold for Brooklyn Nets home games with an event date in September 2026? Exclude refunded tickets.",
+      "expected_behavior": "Answer with the count; event-date basis; refunded tickets excluded; show SQL.",
+      "reference_sql": "SELECT COUNT(t.ticket_id) AS tickets_sold\nFROM events e\nJOIN tickets t ON t.event_id = e.event_id AND t.status = 'sold'\nWHERE e.home_team = 'Brooklyn Nets'\n  AND e.event_date BETWEEN '2026-09-01' AND '2026-09-30';",
+      "expected_columns": [
+        "tickets_sold"
+      ],
+      "expected_rows": [
+        [
+          269
+        ]
+      ],
+      "contract": {
+        "required_fields": [
+          "tickets_sold"
+        ],
+        "ordered": false,
+        "basis": "asks 'how many tickets were sold'"
+      }
+    },
+    {
+      "id": "ambiguous_last_month_date_basis",
+      "split": "dev",
+      "kind": "ambiguous",
+      "question": "How many tickets did we sell last month?",
+      "expected_behavior": "Ask a clarifying question before running SQL. 'Last month' resolves to September 2026 (as of 2026-10-01), but the date basis is ambiguous: tickets purchased in September (purchase date) vs. tickets for events held in September (event date). Must not silently pick one. May offer both options.",
+      "reference_sql": null,
+      "expected_columns": [],
+      "expected_rows": [],
+      "interpretations": [
+        "purchase date in 2026-09 (see purchases_sep_2026_any_event)",
+        "event date in 2026-09, all events"
+      ]
+    },
+    {
+      "id": "no_match_nets_jul_2026",
+      "split": "dev",
+      "kind": "no_match",
+      "question": "How many tickets were sold for Brooklyn Nets home games with an event date in July 2026? Exclude refunded tickets.",
+      "expected_behavior": "No Brooklyn Nets home games are dated in July 2026. Report that no events matched (verified matching_events = 0, or an empty event list), not '0 tickets sold' as if games took place.",
+      "reference_sql": "SELECT e.event_id, e.name, e.event_date,\n       COUNT(t.ticket_id) AS tickets_sold\nFROM events e\nLEFT JOIN tickets t ON t.event_id = e.event_id AND t.status = 'sold'\nWHERE e.home_team = 'Brooklyn Nets'\n  AND e.event_date BETWEEN '2026-07-01' AND '2026-07-31'\nGROUP BY e.event_id\nORDER BY e.event_date ASC, e.event_id ASC;",
+      "expected_columns": [
+        "event_id",
+        "name",
+        "event_date",
+        "tickets_sold"
+      ],
+      "expected_rows": [],
+      "contract": {
+        "required_fields": [],
+        "ordered": false,
+        "no_match": true,
+        "basis": "no matching events: pass on an empty event list or a verified matching_events = 0 (the app then answers with fixed no-match wording)"
+      },
+      "note": "Added 2026-10-03 after the held-out run, as a post-fix regression case for the no-match defect found there."
+    },
+    {
+      "id": "legit_zero_indie_showcase",
+      "split": "provider_check",
+      "kind": "answerable",
+      "question": "How many tickets were sold for Indie Showcase? Exclude refunded tickets.",
+      "expected_behavior": "One event matches (Indie Showcase, 2026-09-18) and every ticket for it was refunded. Answer 0 tickets sold for a real event, with matching_events = 1. Must NOT use the no-matching-events wording.",
+      "reference_sql": "SELECT COUNT(DISTINCT e.event_id) AS matching_events, COUNT(t.ticket_id) AS tickets_sold\nFROM events e\nLEFT JOIN tickets t ON t.event_id = e.event_id AND t.status = 'sold'\nWHERE e.name = 'Indie Showcase';",
+      "expected_columns": [
+        "matching_events",
+        "tickets_sold"
+      ],
+      "expected_rows": [
+        [
+          1,
+          0
+        ]
+      ],
+      "contract": {
+        "required_fields": [
+          "matching_events",
+          "tickets_sold"
+        ],
+        "ordered": false,
+        "basis": "asks 'how many tickets were sold' for an event filter; the support count distinguishes a legitimate zero from no matching events"
+      },
+      "note": "Legitimate-zero contrast to no_match_nets_jul_2026. Expected values computed in plain Python from generate_dataset(): 1 matching event, 26 tickets, all refunded."
+    }
+  ]
+}

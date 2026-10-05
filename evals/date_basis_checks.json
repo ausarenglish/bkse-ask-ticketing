@@ -1,0 +1,57 @@
+{
+  "notice": "Post-evaluation usability regression set for date-basis interpretation (written 2026-10-03, BEFORE the prompt change). Newly constructed questions over the same SYNTHETIC data; not part of the dev/held-out evaluation set and not used for scoring it. Expected values computed in plain Python from generate_dataset(). The contrast value (the other date basis) differs, so the returned number shows which date column was used.",
+  "checks": [
+    {
+      "id": "event_period_nets_sep",
+      "pattern": "period describes games/events -> event_date",
+      "question": "How many tickets were sold for Brooklyn Nets home games in September 2026? Exclude refunded tickets.",
+      "expected_branch": "answered",
+      "expected_date_column": "event_date",
+      "expected_value": 269,
+      "contrast_value_other_basis": 308
+    },
+    {
+      "id": "event_period_nets_sep_paraphrase",
+      "pattern": "period describes games/events -> event_date",
+      "question": "For Nets home games played in September 2026, how many tickets did we sell, not counting refunds?",
+      "expected_branch": "answered",
+      "expected_date_column": "event_date",
+      "expected_value": 269,
+      "contrast_value_other_basis": 308
+    },
+    {
+      "id": "purchase_period_sep",
+      "pattern": "question says bought/purchased during a period -> purchase_date",
+      "question": "How many tickets were purchased in September 2026 across all events? Exclude refunded tickets.",
+      "expected_branch": "answered",
+      "expected_date_column": "purchase_date",
+      "expected_value": 668,
+      "contrast_value_other_basis": 721
+    },
+    {
+      "id": "purchase_period_sep_paraphrase",
+      "pattern": "question says bought/purchased during a period -> purchase_date",
+      "question": "How many tickets did people buy during September 2026, for any event? Don't count refunds.",
+      "expected_branch": "answered",
+      "expected_date_column": "purchase_date",
+      "expected_value": 668,
+      "contrast_value_other_basis": 721
+    },
+    {
+      "id": "unresolved_sold_last_month",
+      "pattern": "period describes only the sale -> clarify",
+      "question": "How many tickets were sold last month?",
+      "expected_branch": "clarify",
+      "expected_date_column": null,
+      "expected_value": null
+    },
+    {
+      "id": "unresolved_sales_sep_paraphrase",
+      "pattern": "period describes only the sale -> clarify",
+      "question": "What were our ticket sales in September 2026?",
+      "expected_branch": "clarify",
+      "expected_date_column": null,
+      "expected_value": null
+    }
+  ]
+}

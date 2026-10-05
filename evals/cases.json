@@ -1,0 +1,464 @@
+{
+  "notice": "Small hand-written evaluation set over SYNTHETIC data (seed 20261001, as of 2026-10-01). Not a large or independent benchmark. expected_columns/expected_rows are written by `uv run python evals/ground_truth.py --write` from plain-Python calculations over the generated records, then checked against reference_sql by tests. HELD-OUT cases must not appear in model prompts or be used for prompt tuning before the first held-out evaluation.",
+  "cases": [
+    {
+      "id": "nets_tickets_sep_2026_by_event_date",
+      "split": "dev",
+      "kind": "answerable",
+      "question": "How many tickets were sold for Brooklyn Nets home games with an event date in September 2026? Exclude refunded tickets.",
+      "expected_behavior": "Answer with the count; event-date basis; refunded tickets excluded; show SQL.",
+      "reference_sql": "SELECT COUNT(t.ticket_id) AS tickets_sold\nFROM events e\nJOIN tickets t ON t.event_id = e.event_id AND t.status = 'sold'\nWHERE e.home_team = 'Brooklyn Nets'\n  AND e.event_date BETWEEN '2026-09-01' AND '2026-09-30';",
+      "expected_columns": [
+        "tickets_sold"
+      ],
+      "expected_rows": [
+        [
+          269
+        ]
+      ],
+      "contract": {
+        "required_fields": [
+          "tickets_sold"
+        ],
+        "ordered": false,
+        "basis": "asks 'how many tickets were sold'"
+      }
+    },
+    {
+      "id": "purchases_sep_2026_any_event",
+      "split": "dev",
+      "kind": "answerable",
+      "question": "How many tickets were purchased in September 2026 (by purchase date, for any event regardless of when it takes place), and how much ticket revenue did they bring in? Exclude refunded tickets.",
+      "expected_behavior": "Answer with ticket count and revenue in dollars; purchase-date basis; note that purchases for October-December events are included.",
+      "reference_sql": "SELECT COUNT(*) AS tickets_sold,\n       COALESCE(SUM(price_cents), 0) AS revenue_cents\nFROM tickets\nWHERE status = 'sold'\n  AND purchase_date BETWEEN '2026-09-01' AND '2026-09-30';",
+      "expected_columns": [
+        "tickets_sold",
+        "revenue_cents"
+      ],
+      "expected_rows": [
+        [
+          668,
+          6333400
+        ]
+      ],
+      "contract": {
+        "required_fields": [
+          "tickets_sold",
+          "revenue_cents"
+        ],
+        "ordered": false,
+        "basis": "asks how many tickets and how much revenue"
+      }
+    },
+    {
+      "id": "top5_barclays_revenue_2026_jan_sep",
+      "split": "dev",
+      "kind": "answerable",
+      "question": "What were the top five events at Barclays Center by ticket revenue, for events dated January 1 through September 30, 2026?",
+      "expected_behavior": "Ranked list of five events with revenue and tickets sold. Ties broken by earlier event date, then event_id.",
+      "reference_sql": "SELECT e.event_id, e.name, e.event_date,\n       COUNT(t.ticket_id) AS tickets_sold,\n       COALESCE(SUM(t.price_cents), 0) AS revenue_cents\nFROM events e\nJOIN venues v ON v.venue_id = e.venue_id\nLEFT JOIN tickets t ON t.event_id = e.event_id AND t.status = 'sold'\nWHERE v.name = 'Barclays Center'\n  AND e.event_date BETWEEN '2026-01-01' AND '2026-09-30'\nGROUP BY e.event_id\nORDER BY revenue_cents DESC, e.event_date ASC, e.event_id ASC\nLIMIT 5;",
+      "expected_columns": [
+        "event_id",
+        "name",
+        "event_date",
+        "tickets_sold",
+        "revenue_cents"
+      ],
+      "expected_rows": [
+        [
+          26,
+          "Velvet Static: One Night Only",
+          "2026-08-08",
+          218,
+          3102800
+        ],
+        [
+          38,
+          "Brooklyn Nets vs. Detroit Pistons (Preseason)",
+          "2026-09-26",
+          199,
+          2239700
+        ],
+        [
+          23,
+          "Neon Tides Reunion",
+          "2026-06-20",
+          175,
+          2183500
+        ],
+        [
+          37,
+          "Orchestra of Lights: Space Odyssey",
+          "2026-09-25",
+          169,
+          1873300
+        ],
+        [
+          29,
+          "Midsummer Hip-Hop Showcase",
+          "2026-08-22",
+          124,
+          1746700
+        ]
+      ],
+      "contract": {
+        "required_fields": [
+          "name",
+          "revenue_cents"
+        ],
+        "ordered": true,
+        "basis": "asks for the top five events ranked by revenue; ticket counts, dates, ids not asked"
+      }
+    },
+    {
+      "id": "nets_vs_liberty_2026_jan_sep",
+      "split": "held_out",
+      "kind": "answerable",
+      "question": "Compare Brooklyn Nets and New York Liberty home games dated January 1 through September 30, 2026: number of games, tickets sold, and ticket revenue.",
+      "expected_behavior": "One row per team with games, tickets sold, revenue; event-date basis; refunded tickets excluded.",
+      "reference_sql": "SELECT e.home_team,\n       COUNT(DISTINCT e.event_id) AS games,\n       COUNT(t.ticket_id) AS tickets_sold,\n       COALESCE(SUM(t.price_cents), 0) AS revenue_cents\nFROM events e\nLEFT JOIN tickets t ON t.event_id = e.event_id AND t.status = 'sold'\nWHERE e.home_team IN ('Brooklyn Nets', 'New York Liberty')\n  AND e.event_date BETWEEN '2026-01-01' AND '2026-09-30'\nGROUP BY e.home_team\nORDER BY e.home_team ASC;",
+      "expected_columns": [
+        "home_team",
+        "games",
+        "tickets_sold",
+        "revenue_cents"
+      ],
+      "expected_rows": [
+        [
+          "Brooklyn Nets",
+          6,
+          656,
+          7377800
+        ],
+        [
+          "New York Liberty",
+          7,
+          723,
+          4394300
+        ]
+      ],
+      "contract": {
+        "required_fields": [
+          "home_team",
+          "games",
+          "tickets_sold",
+          "revenue_cents"
+        ],
+        "ordered": false,
+        "basis": "explicitly asks number of games, tickets sold, and ticket revenue per team"
+      }
+    },
+    {
+      "id": "upcoming_by_remaining_inventory",
+      "split": "dev",
+      "kind": "answerable",
+      "question": "For upcoming events (event date after October 1, 2026), which have the most remaining inventory? Rank all of them.",
+      "expected_behavior": "Ranked list with capacity, tickets sold, remaining inventory (capacity minus non-refunded tickets). Ties broken by earlier event date, then event_id.",
+      "reference_sql": "SELECT e.event_id, e.name, v.name AS venue, e.event_date, e.capacity,\n       COUNT(t.ticket_id) AS tickets_sold,\n       e.capacity - COUNT(t.ticket_id) AS remaining_inventory\nFROM events e\nJOIN venues v ON v.venue_id = e.venue_id\nLEFT JOIN tickets t ON t.event_id = e.event_id AND t.status = 'sold'\nWHERE e.event_date > '2026-10-01'\nGROUP BY e.event_id\nORDER BY remaining_inventory DESC, e.event_date ASC, e.event_id ASC;",
+      "expected_columns": [
+        "event_id",
+        "name",
+        "venue",
+        "event_date",
+        "capacity",
+        "tickets_sold",
+        "remaining_inventory"
+      ],
+      "expected_rows": [
+        [
+          44,
+          "Brooklyn Nets vs. Golden State Warriors",
+          "Barclays Center",
+          "2026-11-06",
+          239,
+          67,
+          172
+        ],
+        [
+          47,
+          "Brooklyn Nets vs. Denver Nuggets",
+          "Barclays Center",
+          "2026-11-20",
+          247,
+          92,
+          155
+        ],
+        [
+          46,
+          "Velvet Static Holiday Show",
+          "Barclays Center",
+          "2026-11-14",
+          210,
+          76,
+          134
+        ],
+        [
+          43,
+          "Brooklyn Nets vs. Cleveland Cavaliers",
+          "Barclays Center",
+          "2026-10-23",
+          216,
+          99,
+          117
+        ],
+        [
+          42,
+          "Neon Tides: Afterglow Tour",
+          "Barclays Center",
+          "2026-10-17",
+          202,
+          101,
+          101
+        ],
+        [
+          49,
+          "Brooklyn Nets vs. Los Angeles Lakers",
+          "Barclays Center",
+          "2026-12-11",
+          175,
+          74,
+          101
+        ],
+        [
+          50,
+          "Winter Wonder Ice Spectacular 2026",
+          "Barclays Center",
+          "2026-12-19",
+          132,
+          57,
+          75
+        ],
+        [
+          41,
+          "Harbor Sounds Autumn Session",
+          "Harborview Arena",
+          "2026-10-10",
+          117,
+          56,
+          61
+        ],
+        [
+          48,
+          "Community Craft Fair",
+          "Harborview Arena",
+          "2026-12-05",
+          60,
+          0,
+          60
+        ],
+        [
+          45,
+          "Puppet Parade 2026",
+          "Harborview Arena",
+          "2026-11-07",
+          78,
+          37,
+          41
+        ]
+      ],
+      "contract": {
+        "required_fields": [
+          "name",
+          "remaining_inventory"
+        ],
+        "ordered": true,
+        "basis": "asks which events have the most remaining inventory, ranked; venue/capacity not asked"
+      }
+    },
+    {
+      "id": "category_revenue_2026_jan_sep",
+      "split": "dev",
+      "kind": "answerable",
+      "question": "Rank event categories by ticket revenue for events dated January 1 through September 30, 2026, across both venues.",
+      "expected_behavior": "One row per category with tickets sold and revenue, highest revenue first; ties broken by category name.",
+      "reference_sql": "SELECT e.category,\n       COUNT(t.ticket_id) AS tickets_sold,\n       COALESCE(SUM(t.price_cents), 0) AS revenue_cents\nFROM events e\nLEFT JOIN tickets t ON t.event_id = e.event_id AND t.status = 'sold'\nWHERE e.event_date BETWEEN '2026-01-01' AND '2026-09-30'\nGROUP BY e.category\nORDER BY revenue_cents DESC, e.category ASC;",
+      "expected_columns": [
+        "category",
+        "tickets_sold",
+        "revenue_cents"
+      ],
+      "expected_rows": [
+        [
+          "basketball",
+          1379,
+          11772100
+        ],
+        [
+          "concert",
+          742,
+          9760600
+        ],
+        [
+          "comedy",
+          99,
+          672400
+        ],
+        [
+          "family",
+          48,
+          213700
+        ],
+        [
+          "other",
+          0,
+          0
+        ]
+      ],
+      "contract": {
+        "required_fields": [
+          "category",
+          "revenue_cents"
+        ],
+        "ordered": true,
+        "basis": "asks to rank categories by revenue; ticket counts not asked"
+      }
+    },
+    {
+      "id": "barclays_2024_highest_avg_price",
+      "split": "held_out",
+      "kind": "answerable",
+      "question": "Which event at Barclays Center in 2024 (event date) had the highest average ticket price? Use the ticket-weighted average over non-refunded tickets.",
+      "expected_behavior": "Name the single event with its average price in dollars and tickets sold. Events with no sold tickets have no average and are excluded. Ties broken by event_id.",
+      "reference_sql": "SELECT e.event_id, e.name, e.event_date,\n       COUNT(t.ticket_id) AS tickets_sold,\n       ROUND(AVG(t.price_cents) / 100.0, 2) AS avg_ticket_price_usd\nFROM events e\nJOIN venues v ON v.venue_id = e.venue_id\nJOIN tickets t ON t.event_id = e.event_id AND t.status = 'sold'\nWHERE v.name = 'Barclays Center'\n  AND e.event_date BETWEEN '2024-01-01' AND '2024-12-31'\nGROUP BY e.event_id\nORDER BY AVG(t.price_cents) DESC, e.event_id ASC\nLIMIT 1;",
+      "expected_columns": [
+        "event_id",
+        "name",
+        "event_date",
+        "tickets_sold",
+        "avg_ticket_price_usd"
+      ],
+      "expected_rows": [
+        [
+          5,
+          "Neon Tides Live",
+          "2024-04-13",
+          134,
+          147.78
+        ]
+      ],
+      "contract": {
+        "required_fields": [
+          "name",
+          "avg_ticket_price_usd"
+        ],
+        "ordered": true,
+        "basis": "asks which single event had the highest weighted average price (exactly one row)"
+      }
+    },
+    {
+      "id": "zero_sales_sep_2026",
+      "split": "dev",
+      "kind": "answerable",
+      "question": "Which events dated in September 2026 had zero tickets sold (after excluding refunds)?",
+      "expected_behavior": "List events with zero non-refunded tickets, including events whose only tickets were refunded; show refunded count so the difference is visible.",
+      "reference_sql": "SELECT e.event_id, e.name, v.name AS venue, e.event_date,\n       COALESCE(SUM(CASE WHEN t.status = 'refunded' THEN 1 ELSE 0 END), 0) AS refunded_tickets\nFROM events e\nJOIN venues v ON v.venue_id = e.venue_id\nLEFT JOIN tickets t ON t.event_id = e.event_id\nWHERE e.event_date BETWEEN '2026-09-01' AND '2026-09-30'\nGROUP BY e.event_id\nHAVING SUM(CASE WHEN t.status = 'sold' THEN 1 ELSE 0 END) = 0\nORDER BY e.event_date ASC, e.event_id ASC;",
+      "expected_columns": [
+        "event_id",
+        "name",
+        "venue",
+        "event_date",
+        "refunded_tickets"
+      ],
+      "expected_rows": [
+        [
+          33,
+          "Open Mic Poetry Night",
+          "Harborview Arena",
+          "2026-09-11",
+          0
+        ],
+        [
+          35,
+          "Indie Showcase",
+          "Harborview Arena",
+          "2026-09-18",
+          26
+        ]
+      ],
+      "contract": {
+        "required_fields": [
+          "name"
+        ],
+        "ordered": false,
+        "basis": "asks which events had zero sales; venue/refund counts not asked"
+      }
+    },
+    {
+      "id": "ambiguous_last_month_date_basis",
+      "split": "dev",
+      "kind": "ambiguous",
+      "question": "How many tickets did we sell last month?",
+      "expected_behavior": "Ask a clarifying question before running SQL. 'Last month' resolves to September 2026 (as of 2026-10-01), but the date basis is ambiguous: tickets purchased in September (purchase date) vs. tickets for events held in September (event date). Must not silently pick one. May offer both options.",
+      "reference_sql": null,
+      "expected_columns": [],
+      "expected_rows": [],
+      "interpretations": [
+        "purchase date in 2026-09 (see purchases_sep_2026_any_event)",
+        "event date in 2026-09, all events"
+      ]
+    },
+    {
+      "id": "ambiguous_best_events",
+      "split": "held_out",
+      "kind": "ambiguous",
+      "question": "Which of our events performed best?",
+      "expected_behavior": "Ask a clarifying question: 'best' could mean ticket revenue, tickets sold, or sell-through (sold / capacity); period and venue are also unspecified. Must not silently pick a metric.",
+      "reference_sql": null,
+      "expected_columns": [],
+      "expected_rows": []
+    },
+    {
+      "id": "unsupported_customers",
+      "split": "dev",
+      "kind": "unsupported",
+      "question": "Which customers bought the most Brooklyn Nets tickets this season?",
+      "expected_behavior": "State the limitation: the data has no customer or buyer information. Do not invent customers or proxy them with ticket IDs. May offer what is available (e.g. Nets tickets sold by game).",
+      "reference_sql": null,
+      "expected_columns": [],
+      "expected_rows": []
+    },
+    {
+      "id": "no_match_liberty_jan_2026",
+      "split": "held_out",
+      "kind": "no_match",
+      "question": "How many tickets were sold for New York Liberty home games with an event date in January 2026?",
+      "expected_behavior": "Query returns no events. Say there were no Liberty home games dated in January 2026 in the data, rather than reporting '0 tickets sold' as if games happened with no sales.",
+      "reference_sql": "SELECT e.event_id, e.name, e.event_date,\n       COUNT(t.ticket_id) AS tickets_sold\nFROM events e\nLEFT JOIN tickets t ON t.event_id = e.event_id AND t.status = 'sold'\nWHERE e.home_team = 'New York Liberty'\n  AND e.event_date BETWEEN '2026-01-01' AND '2026-01-31'\nGROUP BY e.event_id\nORDER BY e.event_date ASC, e.event_id ASC;",
+      "expected_columns": [
+        "event_id",
+        "name",
+        "event_date",
+        "tickets_sold"
+      ],
+      "expected_rows": [],
+      "contract": {
+        "required_fields": [],
+        "ordered": false,
+        "basis": "no matching events: the result must be empty"
+      }
+    },
+    {
+      "id": "no_match_nets_jul_2026",
+      "split": "dev",
+      "kind": "no_match",
+      "question": "How many tickets were sold for Brooklyn Nets home games with an event date in July 2026? Exclude refunded tickets.",
+      "expected_behavior": "No Brooklyn Nets home games are dated in July 2026. Report that no events matched (verified matching_events = 0, or an empty event list), not '0 tickets sold' as if games took place.",
+      "reference_sql": "SELECT e.event_id, e.name, e.event_date,\n       COUNT(t.ticket_id) AS tickets_sold\nFROM events e\nLEFT JOIN tickets t ON t.event_id = e.event_id AND t.status = 'sold'\nWHERE e.home_team = 'Brooklyn Nets'\n  AND e.event_date BETWEEN '2026-07-01' AND '2026-07-31'\nGROUP BY e.event_id\nORDER BY e.event_date ASC, e.event_id ASC;",
+      "expected_columns": [
+        "event_id",
+        "name",
+        "event_date",
+        "tickets_sold"
+      ],
+      "expected_rows": [],
+      "contract": {
+        "required_fields": [],
+        "ordered": false,
+        "no_match": true,
+        "basis": "no matching events: pass on an empty event list or a verified matching_events = 0 (the app then answers with fixed no-match wording)"
+      },
+      "note": "Added 2026-10-03 after the held-out run, as a post-fix regression case for the no-match defect found there."
+    }
+  ],
+  "contract_note": "contract.required_fields are the semantic fields each question asks for, chosen from the question text (dev contracts after the first dev run, held-out contracts before any held-out run). Extra result columns are ignored; column names are matched through FIELD_ALIASES in evals/run_eval.py. Expected values and reference SQL are unchanged."
+}

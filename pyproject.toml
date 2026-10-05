@@ -1,0 +1,29 @@
+[project]
+name = "ask-ticketing"
+version = "0.1.0"
+description = "Ask plain-English questions about ticketing data; get SQL, results, and a readable answer."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=1.11.0",
+    "boto3[crt]>=1.43.108",
+    "langgraph>=1.2.12",
+    "openai>=3.24.0",
+    "pydantic>=2",
+    "streamlit>=1.65.0",
+]
+
+[project.scripts]
+ask-ticketing = "ask_ticketing.cli:main"
+ask-ticketing-generate-data = "ask_ticketing.data:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["uv_build>=0.12.9,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["evals"]

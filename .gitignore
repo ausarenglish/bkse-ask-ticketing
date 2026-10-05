@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Environments
+.venv/
+venv/
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
+*.pem
+.aws/
+
+# Local data and runtime output
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db.tmp
+data/local/
+runs/
+logs/
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
