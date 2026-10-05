@@ -22,7 +22,8 @@ The app uses exactly the one provider you select. It never switches providers au
 
 **Prerequisites:** [uv](https://docs.astral.sh/uv/) (it installs Python 3.12 from `.python-version` if needed) and your own Anthropic API key with API billing enabled. No AWS account is needed.
 
-    cd <your clone of this repository>
+    git clone https://github.com/ausarenglish/bkse-ask-ticketing.git
+    cd bkse-ask-ticketing
     export ANTHROPIC_API_KEY="<your-anthropic-api-key>"    # placeholder; never commit a real key
     uv sync --locked                                       # exact dependency versions from uv.lock
     uv run ask-ticketing-generate-data                     # builds data/local/ticketing.db (deterministic, gitignored)
