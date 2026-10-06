@@ -61,6 +61,26 @@ You can save questions for reuse, clear the page to start over, and download the
 
 Ask Ticketing is built with Python, LangGraph, SQLite and Streamlit. The model sits behind interchangeable provider adapters for Anthropic, OpenAI and Amazon Bedrock. Generated SQL runs read-only against the database, with limits on execution time and returned rows.
 
+## Data
+
+The locally generated, synthetic dataset contains no real customer data. A fixed seed makes the dataset reproducible. The schema is defined in [schema.sql](src/ask_ticketing/schema.sql):
+
+- venues: venue_id, name.
+- events: event_id, venue_id, name, category, home_team, event_date, capacity.
+- tickets: ticket_id, event_id, purchase_date, price_cents, status.
+
+Events belong to venues; tickets belong to events. Prices are stored in cents. Sold-ticket counts and revenue exclude refunded tickets.
+
+## Model choice and tradeoffs
+
+Claude Sonnet 5.5 is the default because it performed well in the documented checks at low measured cost. Cheaper models were not evaluated. Provider adapters allow reviewers to use their existing credentials; model behavior can differ.
+
+SQLite keeps setup local and simple. Clarification requires resubmitting a question rather than maintaining conversation history. The developer-written evaluation set is small; results and failures are documented in [evals/RESULTS.md](evals/RESULTS.md).
+
+## With more time
+
+I would prioritize a shared metric-definition layer, a larger evaluation set built from real user questions, and multi-turn clarification. A shared deployment would also need authentication and per-user usage limits.
+
 ## Tests and limitations
 
 The test suite needs no credentials:
