@@ -27,7 +27,7 @@ Run `uv run streamlit run src/ask_ticketing/app.py`. The data is synthetic, as o
   - Fixed with a validated support count and fixed wording.
   - Checked on a new dev case and a zero-sales contrast. Held-out was not rerun.
 - Browser acceptance check: the app over-clarified "games in July". A one-sentence prompt refinement fixed it, verified on 6 new paired questions written beforehand (6/6, estimated $0.05). The earlier scores predate this change and weren't rerun. A second restatement of the same rule (2026-10-05) fixed the Bedrock failure and was rechecked on all three providers.
-- About $0.01 per question (estimated from reported token usage at list prices) and about 5 s. Estimated total live spend about $0.57 (including about $0.28 for the provider checks and post-fix regression checks); the evaluation runs used app-enforced pre-dispatch budget bounds.
+- About $0.01 per question (estimated from reported token usage at list prices) and about 5 s. Approximately $0.61 in estimated API usage in total (not a provider bill), including about $0.32 for the provider checks, post-fix regression checks and the final UI example check; the evaluation runs used app-enforced pre-dispatch budget bounds.
 
 ## 5. Tradeoffs (1 min)
 - **Sonnet 5.5 over Opus:** the lower-cost candidate tested; it met the tested requirements, so the more expensive Opus wasn't needed. Cheaper models such as Haiku 4.5 were not evaluated.
