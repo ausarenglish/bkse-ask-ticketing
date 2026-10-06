@@ -253,3 +253,15 @@ The rule's example changed from "tickets sold last month" to "tickets sold in Au
 - The dev and held-out scores predate both date-basis prompt changes.
 - OpenAI latency was higher on this day (7–16 s per question).
 - Spend for this repair: about **$0.193** estimated (authorized $2.00). Cumulative project estimate: about $0.57.
+
+## Live UI example check (2026-10-05)
+
+The three example questions in the UI were each run once through the real UI with Anthropic `claude-sonnet-5-5`. The run used the existing spend guard (cap $1.00, SDK retries 0), with no retries or tuning. Results were compared with the independent expectations in `tests/test_examples_data.py`.
+
+| example | result | correct | calls | estimated cost |
+| --- | --- | --- | --- | --- |
+| Nets ticket sales | 269 tickets, 2 matching events | yes | 2 | $0.0103 |
+| Upcoming event overview | 10 events in date/ID order; sold, remaining capacity, sell-through (2 decimals) and average price match; average is null only for the no-sales event | yes | 2 | $0.0162 |
+| Revenue by venue (August 2026) | Barclays Center 6,347,200 cents; Harborview Arena 1,068,000 cents | yes | 2 | $0.0093 |
+
+**3/3 correct.** 6 real Anthropic calls, 3 SQL executions, about **$0.0381** estimated, 0 repairs and 0 errors. All summaries passed the numbers-in-rows check. One real CSV download (Revenue by venue) was byte-identical to the export of the displayed result, and it caused no extra model calls or SQL. Each example ran once, so this shows the examples work, not that accuracy is reliable. Cumulative project estimate: about $0.61.
